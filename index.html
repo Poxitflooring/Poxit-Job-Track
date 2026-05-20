@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poxit Job Planner</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0a0a; color: #f0ede8; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #141414; }
+    ::-webkit-scrollbar-thumb { background: #077A76; border-radius: 2px; }
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+    .header { background: #000; border-bottom: 1px solid #2a2a2a; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 60px; position: sticky; top: 0; z-index: 100; }
+    .logo { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px; color: #f0ede8; }
+    .logo span { color: #0ABAB5; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .sync-badge { font-size: 11px; font-family: 'DM Mono', monospace; color: #888; display: flex; align-items: center; gap: 6px; }
+    .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: #0ABAB5; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .nav-tabs { display: flex; background: #141414; border-bottom: 1px solid #2a2a2a; padding: 0 24px; gap: 4px; overflow-x: auto; }
+    .nav-tab { padding: 12px 20px; font-size: 13px; font-weight: 500; color: #888; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+    .nav-tab:hover { color: #f0ede8; }
+    .nav-tab.active { color: #0ABAB5; border-bottom-color: #0ABAB5; }
+    .main { flex: 1; padding: 24px; max-width: 1400px; margin: 0 auto; width: 100%; }
+    .card { background: #141414; border: 1px solid #2a2a2a; border-radius: 8px; padding: 20px; }
+    .card-title { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; color: #0ABAB5; margin-bottom: 16px; }
+    .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background: #0ABAB5; color: #000; }
+    .btn-primary:hover { background: #2ECDC8; }
+    .btn-outline { background: transparent; color: #0ABAB5; border: 1px solid #0ABAB5; }
+    .btn-outline:hover { background: #0ABAB522; }
+    .btn-ghost { background: transparent; color: #888; border: 1px solid #2a2a2a; }
+    .btn-ghost:hover { color: #f0ede8; border-color: #444; }
+    .btn-danger { background: #e5393522; color: #e53935; border: 1px solid #e5393544; }
+    .btn-danger:hover { background: #e5393533; }
+    .btn-success { background: #4caf5022; color: #4caf50; border: 1px solid #4caf5044; }
+    .btn-success:hover { background: #4caf5033; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .input, .select, .textarea { background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 6px; color: #f0ede8; font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 10px 12px; width: 100%; transition: border-color 0.2s; outline: none; }
+    .input:focus, .select:focus, .textarea:focus { border-color: #0ABAB5; }
+    .select option { background: #1e1e1e; }
+    .textarea { resize: vertical; min-height: 80px; }
+    .label { font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #888; text-transform: uppercase; margin-bottom: 6px; display: block; }
+    .field { margin-bottom: 16px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 768px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+    .job-list { display: flex; flex-direction: column; gap: 12px; }
+    .job-card { background: #141414; border: 1px solid #2a2a2a; border-radius: 8px; padding: 16px 20px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .job-card:hover { border-color: #0ABAB544; background: #1e1e1e; }
+    .job-status-pill { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; white-space: nowrap; }
+    .job-info { flex: 1; min-width: 0; }
+    .job-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .job-meta { font-size: 12px; color: #888; display: flex; gap: 12px; flex-wrap: wrap; }
+    .job-type-badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #0ABAB522; color: #0ABAB5; border: 1px solid #0ABAB533; white-space: nowrap; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+    .modal { background: #141414; border: 1px solid #2a2a2a; border-radius: 12px; width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto; padding: 28px; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: #0ABAB5; }
+    .modal-close { width: 32px; height: 32px; border-radius: 6px; background: #1e1e1e; border: 1px solid #2a2a2a; color: #888; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s; }
+    .modal-close:hover { color: #f0ede8; border-color: #444; }
+    .tracker-header { background: linear-gradient(135deg, #0ABAB511 0%, transparent 60%); border: 1px solid #0ABAB533; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .tracker-address { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+    .tracker-meta { font-size: 13px; color: #888; }
+    .tracker-clock { font-family: 'DM Mono', monospace; font-size: 28px; color: #0ABAB5; margin: 16px 0 0; }
+    .step-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .step-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 6px; }
+    .step-row.active { border-color: #0ABAB5; background: #0ABAB50a; }
+    .step-row.done { opacity: 0.6; }
+    .step-name { flex: 1; font-size: 13px; font-weight: 500; }
+    .step-time { font-family: 'DM Mono', monospace; font-size: 12px; color: #888; }
+    .step-dot { width: 8px; height: 8px; border-radius: 50%; background: #2a2a2a; }
+    .step-dot.active { background: #0ABAB5; box-shadow: 0 0 8px #0ABAB5; }
+    .step-dot.done { background: #4caf50; }
+    .material-row { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid #2a2a2a; }
+    .material-row:last-child { border-bottom: none; }
+    .stat-box { background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; text-align: center; }
+    .stat-value { font-family: 'DM Mono', monospace; font-size: 24px; color: #0ABAB5; font-weight: 500; }
+    .stat-label { font-size: 11px; color: #888; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 20px; }
+    .day-col { background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 6px; padding: 10px 8px; min-height: 120px; }
+    .day-col.today { border-color: #0ABAB5; }
+    .day-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; color: #888; text-transform: uppercase; margin-bottom: 8px; }
+    .day-num { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+    .day-job { font-size: 10px; padding: 3px 6px; border-radius: 3px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+    .day-job:hover { opacity: 0.8; }
+    .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-bar .input { width: auto; flex: 1; min-width: 200px; }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #1e1e1e; border: 1px solid #0ABAB5; border-radius: 8px; padding: 12px 20px; font-size: 13px; color: #f0ede8; z-index: 999; animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .divider { border: none; border-top: 1px solid #2a2a2a; margin: 20px 0; }
+    .empty { text-align: center; padding: 60px 20px; color: #888; }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.3; }
+    .empty-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: #f0ede8; }
+    .flex { display: flex; }
+    .gap-2 { gap: 8px; }
+    .gap-3 { gap: 12px; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .mt-2 { margin-top: 8px; }
+    .mt-3 { margin-top: 12px; }
+    .mb-3 { margin-bottom: 12px; }
+    .w-full { width: 100%; }
+    .text-dim { color: #888; font-size: 12px; }
+    @media (max-width: 600px) { .week-grid { grid-template-columns: repeat(3, 1fr); } .job-card { flex-direction: column; align-items: flex-start; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyAubUpqRPXv0L450tHvfaX87pVNiSA36dwd1tKQNCqpsmlU5zU3wqkhjGDnCSzS2yK/exec";
+
+const JOB_TYPES = ["Flake Floor","Quartz Floor","Base Epoxy","Metallic Epoxy","Concrete Repair","Tinted Sealant","Hard Seal","Stone Seal","AquaSeal","Care Plan Visit","Maintenance Clean","Pressure Cleaning","Crack Repair","Spalling Repair","Grinding Only","Trip Hazard Repair","Control Joints","Coating Removal"];
+const JOB_STATUSES = ["Pending","Scheduled","In Progress","Completed","Cancelled"];
+const STATUS_COLORS = { Pending:"#888", Scheduled:"#0ABAB5", "In Progress":"#f5a623", Completed:"#4caf50", Cancelled:"#e53935" };
+const TIME_STEPS = ["Setup","Grinding","Priming","Wait (Prime)","Epoxy & Flake","Wait (Epoxy)","Scrape & Clean","Topcoat #1","Wait (Topcoat 1)","Topcoat #2","Wait (Topcoat 2)","Pack Up"];
+const STORAGE_KEY = "poxit_jobs_v1";
+
+function fmt(ms) {
+  if (!ms) return "—";
+  const s = Math.floor(ms/1000), m = Math.floor(s/60), h = Math.floor(m/60);
+  return h > 0 ? `${h}h ${m%60}m` : `${m}m ${s%60}s`;
+}
+function fmtTime(ts) {
+  if (!ts) return "—";
+  return new Date(ts).toLocaleTimeString("en-AU",{hour:"2-digit",minute:"2-digit"});
+}
+function fmtDate(str) {
+  if (!str) return "";
+  return new Date(str).toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
+}
+function generateId() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6).toUpperCase(); }
+function loadJobsLocal() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]"); } catch { return []; } }
+function saveJobsLocal(jobs) { localStorage.setItem(STORAGE_KEY,JSON.stringify(jobs)); }
+
+async function fetchJobsFromSheets() {
+  const res = await fetch(`${APPS_SCRIPT_URL}?action=getJobs`);
+  const data = await res.json();
+  if (data.status==="ok" && Array.isArray(data.jobs)) return data.jobs;
+  return null;
+}
+async function syncJobToSheets(job) {
+  const url = `${APPS_SCRIPT_URL}?action=saveJob&payload=${encodeURIComponent(JSON.stringify(job))}`;
+  const res = await fetch(url);
+  return res.json();
+}
+async function deleteJobFromSheets(id) {
+  const url = `${APPS_SCRIPT_URL}?action=deleteJob&id=${encodeURIComponent(id)}`;
+  const res = await fetch(url);
+  return res.json();
+}
+
+function LiveClock() {
+  const [t, setT] = useState(new Date());
+  useEffect(() => { const i = setInterval(()=>setT(new Date()),1000); return ()=>clearInterval(i); },[]);
+  return <span style={{fontFamily:"'DM Mono',monospace",fontSize:13,color:"#888"}}>{t.toLocaleTimeString("en-AU",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span>;
+}
+
+function JobModal({ job, quotes, onSave, onClose }) {
+  const isNew = !job?.id;
+  const [form, setForm] = useState(job || {
+    id:generateId(), customerName:"", address:"", phone:"", email:"",
+    jobType:JOB_TYPES[0], sqm:"", scheduledDate:"", scheduledTime:"",
+    notes:"", status:"Scheduled", linkedQuoteId:"", materials:[], timeLog:[], createdAt:Date.now()
+  });
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const applyQuote = (qid) => {
+    const q = quotes.find(x=>x.id===qid||x.quoteNumber===qid||x.key===qid);
+    if (!q) return;
+    set("linkedQuoteId", qid);
+    if (q.clientName||q.name) set("customerName", q.clientName||q.name);
+    if (q.address) set("address", q.address);
+    if (q.phone) set("phone", q.phone);
+    if (q.email) set("email", q.email);
+    if (q.sqm||q.totalArea) set("sqm", q.sqm||q.totalArea);
+    if (q.jobType) set("jobType", q.jobType);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-header">
+          <span className="modal-title">{isNew?"New Job":"Edit Job"}</span>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        {quotes.length > 0 && (
+          <div className="field">
+            <label className="label">Import from Quote</label>
+            <select className="select" value={form.linkedQuoteId} onChange={e=>applyQuote(e.target.value)}>
+              <option value="">— Select a quote —</option>
+              {quotes.map(q=>(
+                <option key={q.id||q.key||q.quoteNumber} value={q.id||q.key||q.quoteNumber}>
+                  {q.quoteNumber||q.ref||q.id||q.key} — {q.clientName||q.name||"Unknown"} — {q.address||""}
+                </option>
+              ))}
+            </select>
+            {form.linkedQuoteId && <p className="text-dim mt-2">✓ Quote data imported — edit as needed</p>}
+          </div>
+        )}
+        <hr className="divider" />
+        <div className="grid-2">
+          <div className="field">
+            <label className="label">Customer Name</label>
+            <input className="input" value={form.customerName} onChange={e=>set("customerName",e.target.value)} placeholder="John Smith" />
+          </div>
+          <div className="field">
+            <label className="label">Job Type</label>
+            <select className="select" value={form.jobType} onChange={e=>set("jobType",e.target.value)}>
+              {JOB_TYPES.map(t=><option key={t}>{t}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="field">
+          <label className="label">Address</label>
+          <input className="input" value={form.address} onChange={e=>set("address",e.target.value)} placeholder="123 Street, Suburb QLD 4000" />
+        </div>
+        <div className="grid-2">
+          <div className="field">
+            <label className="label">Phone</label>
+            <input className="input" value={form.phone} onChange={e=>set("phone",e.target.value)} placeholder="04xx xxx xxx" />
+          </div>
+          <div className="field">
+            <label className="label">Email</label>
+            <input className="input" value={form.email} onChange={e=>set("email",e.target.value)} placeholder="client@email.com" />
+          </div>
+        </div>
+        <div className="grid-3">
+          <div className="field">
+            <label className="label">Area (m²)</label>
+            <input className="input" type="number" value={form.sqm} onChange={e=>set("sqm",e.target.value)} placeholder="0" />
+          </div>
+          <div className="field">
+            <label className="label">Date</label>
+            <input className="input" type="date" value={form.scheduledDate} onChange={e=>set("scheduledDate",e.target.value)} />
+          </div>
+          <div className="field">
+            <label className="label">Start Time</label>
+            <input className="input" type="time" value={form.scheduledTime} onChange={e=>set("scheduledTime",e.target.value)} />
+          </div>
+        </div>
+        <div className="field">
+          <label className="label">Status</label>
+          <select className="select" value={form.status} onChange={e=>set("status",e.target.value)}>
+            {JOB_STATUSES.map(s=><option key={s}>{s}</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <label className="label">Notes</label>
+          <textarea className="textarea" value={form.notes} onChange={e=>set("notes",e.target.value)} placeholder="Access info, substrate condition, special requirements..." />
+        </div>
+        <div className="flex gap-2 justify-between">
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={()=>onSave(form)}>{isNew?"Create Job":"Save Changes"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TrackerModal({ job, onUpdate, onClose }) {
+  const [timeLog, setTimeLog] = useState(job.timeLog||[]);
+  const [activeStep, setActiveStep] = useState(null);
+  const [stepStart, setStepStart] = useState(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [onSite, setOnSite] = useState(job.arrivedAt||null);
+  const [leftSite, setLeftSite] = useState(job.leftAt||null);
+  const [selectedStep, setSelectedStep] = useState(TIME_STEPS[0]);
+  const [materials, setMaterials] = useState(job.materials||[]);
+  const [matName, setMatName] = useState("");
+  const [matQty, setMatQty] = useState("");
+  const [matUnit, setMatUnit] = useState("L");
+  const [matNote, setMatNote] = useState("");
+  const [tab, setTab] = useState("time");
+  const timerRef = useRef();
+
+  useEffect(() => {
+    if (activeStep !== null) {
+      timerRef.current = setInterval(()=>setElapsed(Date.now()-stepStart),500);
+    } else {
+      clearInterval(timerRef.current);
+      setElapsed(0);
+    }
+    return ()=>clearInterval(timerRef.current);
+  },[activeStep,stepStart]);
+
+  const arriveOnSite = () => {
+    const t = Date.now();
+    setOnSite(t);
+    onUpdate({...job, arrivedAt:t, status:"In Progress"});
+  };
+
+  const startStep = () => { setActiveStep(selectedStep); setStepStart(Date.now()); };
+
+  const endStep = () => {
+    if (!activeStep) return;
+    const entry = {step:activeStep, start:stepStart, end:Date.now(), duration:Date.now()-stepStart};
+    const newLog = [...timeLog, entry];
+    setTimeLog(newLog);
+    setActiveStep(null);
+    setStepStart(null);
+    onUpdate({...job, timeLog:newLog});
+  };
+
+  const clockOut = () => {
+    if (activeStep) endStep();
+    const t = Date.now();
+    setLeftSite(t);
+    onUpdate({...job, leftAt:t, timeLog});
+  };
+
+  const finishJob = () => {
+    if (activeStep) endStep();
+    const t = Date.now();
+    setLeftSite(t);
+    onUpdate({...job, leftAt:t, timeLog, status:"Completed"});
+    onClose();
+  };
+
+  const addMaterial = () => {
+    if (!matName) return;
+    const m = {id:generateId(), name:matName, qty:matQty, unit:matUnit, note:matNote, addedAt:Date.now()};
+    const newMats = [...materials, m];
+    setMaterials(newMats);
+    onUpdate({...job, materials:newMats});
+    setMatName(""); setMatQty(""); setMatNote("");
+  };
+
+  const removeMaterial = (id) => {
+    const newMats = materials.filter(m=>m.id!==id);
+    setMaterials(newMats);
+    onUpdate({...job, materials:newMats});
+  };
+
+  const totalTime = timeLog.reduce((s,e)=>s+e.duration,0);
+
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal" style={{maxWidth:720}}>
+        <div className="modal-header">
+          <span className="modal-title">Job Tracker</span>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="tracker-header">
+          <div className="tracker-address">{job.address||"No address"}</div>
+          <div className="tracker-meta">{job.customerName} · {job.jobType}{job.sqm?` · ${job.sqm}m²`:""}</div>
+          {onSite && <div className="tracker-meta mt-2">🟢 Arrived {fmtTime(onSite)}{leftSite?` · Left ${fmtTime(leftSite)}`:""}</div>}
+        </div>
+
+        {!onSite && (
+          <button className="btn btn-primary w-full mb-3" style={{fontSize:15,padding:"14px"}} onClick={arriveOnSite}>
+            🚗 Clock In — Arrived on Site
+          </button>
+        )}
+
+        <div className="nav-tabs" style={{marginBottom:20,padding:0}}>
+          {["time","materials"].map(t=>(
+            <div key={t} className={`nav-tab ${tab===t?"active":""}`} onClick={()=>setTab(t)}>
+              {t==="time"?"⏱ Time Tracking":"📦 Materials Used"}
+            </div>
+          ))}
+        </div>
+
+        {tab==="time" && (
+          <>
+            {onSite && (
+              <>
+                <div className="card mb-3">
+                  <label className="label">Next Step</label>
+                  <div className="flex gap-2 items-center">
+                    <select className="select" value={selectedStep} onChange={e=>setSelectedStep(e.target.value)} disabled={!!activeStep}>
+                      {TIME_STEPS.map(s=><option key={s}>{s}</option>)}
+                    </select>
+                    {!activeStep
+                      ? <button className="btn btn-primary" style={{whiteSpace:"nowrap"}} onClick={startStep}>▶ Start</button>
+                      : <button className="btn btn-outline" style={{whiteSpace:"nowrap"}} onClick={endStep}>⏹ End Step</button>
+                    }
+                  </div>
+                  {activeStep && <div className="tracker-clock">{activeStep}: {fmt(elapsed)}</div>}
+                </div>
+
+                {timeLog.length > 0 && (
+                  <div className="card mb-3">
+                    <div className="card-title" style={{fontSize:14}}>Completed Steps</div>
+                    <div className="step-list">
+                      {timeLog.map((e,i)=>(
+                        <div key={i} className="step-row done">
+                          <div className="step-dot done" />
+                          <div className="step-name">{e.step}</div>
+                          <div className="step-time">{fmtTime(e.start)} → {fmtTime(e.end)}</div>
+                          <div className="step-time" style={{color:"#0ABAB5"}}>{fmt(e.duration)}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-between" style={{borderTop:"1px solid #2a2a2a",paddingTop:12,marginTop:4}}>
+                      <span className="text-dim">Total on-site time</span>
+                      <span style={{fontFamily:"'DM Mono',monospace",color:"#0ABAB5",fontSize:14}}>{fmt(totalTime)}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button className="btn btn-ghost" style={{flex:1}} onClick={clockOut} disabled={!!leftSite}>🚪 Clock Out</button>
+                  <button className="btn btn-success" style={{flex:1}} onClick={finishJob}>✅ Job Finished</button>
+                </div>
+              </>
+            )}
+            {!onSite && <div className="empty"><div className="empty-icon">⏱</div><div className="empty-title">Clock in first to start tracking</div></div>}
+          </>
+        )}
+
+        {tab==="materials" && (
+          <>
+            <div className="card mb-3">
+              <div className="card-title" style={{fontSize:14}}>Log Material Used</div>
+              <div className="grid-2">
+                <div className="field">
+                  <label className="label">Material / Product</label>
+                  <input className="input" value={matName} onChange={e=>setMatName(e.target.value)} placeholder="e.g. Epoxy Part A, Flake blend..." />
+                </div>
+                <div className="field">
+                  <label className="label">Unit</label>
+                  <select className="select" value={matUnit} onChange={e=>setMatUnit(e.target.value)}>
+                    {["L","kg","m²","m","units","bags","tins"].map(u=><option key={u}>{u}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid-2">
+                <div className="field">
+                  <label className="label">Quantity</label>
+                  <input className="input" type="number" value={matQty} onChange={e=>setMatQty(e.target.value)} placeholder="0" />
+                </div>
+                <div className="field">
+                  <label className="label">Note (optional)</label>
+                  <input className="input" value={matNote} onChange={e=>setMatNote(e.target.value)} placeholder="e.g. extra for edges" />
+                </div>
+              </div>
+              <button className="btn btn-primary btn-sm" onClick={addMaterial}>+ Add Material</button>
+            </div>
+            {materials.length > 0 ? (
+              <div className="card">
+                <div className="card-title" style={{fontSize:14}}>Materials Used This Job</div>
+                {materials.map(m=>(
+                  <div key={m.id} className="material-row">
+                    <div style={{flex:1}}>
+                      <div style={{fontWeight:600,fontSize:13}}>{m.name}</div>
+                      {m.note && <div className="text-dim">{m.note}</div>}
+                    </div>
+                    <div style={{fontFamily:"'DM Mono',monospace",color:"#0ABAB5",fontSize:13,marginRight:12}}>{m.qty} {m.unit}</div>
+                    <button className="btn btn-danger btn-sm" onClick={()=>removeMaterial(m.id)}>✕</button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty"><div className="empty-icon">📦</div><div className="empty-title">No materials logged yet</div></div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [jobs, setJobs] = useState(loadJobsLocal);
+  const [quotes, setQuotes] = useState([]);
+  const [loadingQuotes, setLoadingQuotes] = useState(false);
+  const [loadingJobs, setLoadingJobs] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [tab, setTab] = useState("planner");
+  const [showAddJob, setShowAddJob] = useState(false);
+  const [editJob, setEditJob] = useState(null);
+  const [trackJob, setTrackJob] = useState(null);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("All");
+  const [filterType, setFilterType] = useState("All");
+  const [toast, setToast] = useState(null);
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  useEffect(()=>{ saveJobsLocal(jobs); },[jobs]);
+
+  const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null),3500); };
+
+  const fetchJobs = async () => {
+    setLoadingJobs(true);
+    try {
+      const sheetsJobs = await fetchJobsFromSheets();
+      if (sheetsJobs && sheetsJobs.length > 0) {
+        setJobs(sheetsJobs);
+        saveJobsLocal(sheetsJobs);
+        showToast(`✓ Synced ${sheetsJobs.length} jobs from Sheets`);
+      }
+    } catch(e) {}
+    setLoadingJobs(false);
+  };
+
+  const fetchQuotes = async () => {
+    setLoadingQuotes(true);
+    try {
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=getQuotes`);
+      const data = await res.json();
+      if (data && Array.isArray(data.quotes)) setQuotes(data.quotes);
+      else if (data && Array.isArray(data)) setQuotes(data);
+    } catch(e) {}
+    setLoadingQuotes(false);
+  };
+
+  useEffect(()=>{ fetchQuotes(); fetchJobs(); },[]);
+
+  const saveJob = async (job) => {
+    setJobs(prev=>{ const exists=prev.find(j=>j.id===job.id); return exists?prev.map(j=>j.id===job.id?job:j):[...prev,job]; });
+    setShowAddJob(false); setEditJob(null);
+    showToast("✓ Saved — syncing to Sheets...");
+    setSyncing(true);
+    try { await syncJobToSheets(job); showToast(`✓ ${job.customerName||"Job"} saved to Sheets`); }
+    catch(e) { showToast("⚠ Saved locally — sync failed"); }
+    setSyncing(false);
+  };
+
+  const updateJob = async (job) => {
+    setJobs(prev=>prev.map(j=>j.id===job.id?job:j));
+    try { await syncJobToSheets(job); } catch(e) {}
+  };
+
+  const deleteJob = async (id) => {
+    if (!confirm("Delete this job?")) return;
+    setJobs(prev=>prev.filter(j=>j.id!==id));
+    showToast("Job deleted");
+    try { await deleteJobFromSheets(id); } catch(e) {}
+  };
+
+  const filtered = jobs.filter(j=>{
+    const q = search.toLowerCase();
+    const matchSearch = !q||j.customerName?.toLowerCase().includes(q)||j.address?.toLowerCase().includes(q)||j.jobType?.toLowerCase().includes(q);
+    const matchStatus = filterStatus==="All"||j.status===filterStatus;
+    const matchType = filterType==="All"||j.jobType===filterType;
+    return matchSearch&&matchStatus&&matchType;
+  }).sort((a,b)=>{ if(a.scheduledDate&&b.scheduledDate) return a.scheduledDate.localeCompare(b.scheduledDate); return b.createdAt-a.createdAt; });
+
+  const today = new Date();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate()-today.getDay()+1+weekOffset*7);
+  const weekDays = Array.from({length:7},(_,i)=>{ const d=new Date(startOfWeek); d.setDate(startOfWeek.getDate()+i); return d; });
+  const jobsForDay = (d) => { const ds=d.toISOString().slice(0,10); return jobs.filter(j=>j.scheduledDate===ds); };
+
+  const stats = {
+    total:jobs.length,
+    scheduled:jobs.filter(j=>j.status==="Scheduled").length,
+    inProgress:jobs.filter(j=>j.status==="In Progress").length,
+    completed:jobs.filter(j=>j.status==="Completed").length,
+  };
+
+  return (
+    <>
+      <div className="app">
+        <div className="header">
+          <div className="logo">POXIT <span>FLOORING</span></div>
+          <div className="header-right">
+            <LiveClock />
+            <div className="sync-badge">
+              <div className="sync-dot" style={{background:syncing?"#f5a623":loadingJobs?"#888":"#0ABAB5"}} />
+              {syncing?"SYNCING...":loadingJobs?"LOADING...":"SHEETS LIVE"}
+            </div>
+            <button className="btn btn-ghost btn-sm" onClick={()=>{fetchJobs();fetchQuotes();}}>↻ Sync</button>
+          </div>
+        </div>
+
+        <div className="nav-tabs">
+          {[{key:"planner",label:"📋 Job List"},{key:"calendar",label:"📅 Calendar"},{key:"stats",label:"📊 Stats"}].map(t=>(
+            <div key={t.key} className={`nav-tab ${tab===t.key?"active":""}`} onClick={()=>setTab(t.key)}>{t.label}</div>
+          ))}
+        </div>
+
+        <div className="main">
+
+          {tab==="planner" && (
+            <>
+              <div className="grid-4 mb-3">
+                {[{label:"Total Jobs",value:stats.total},{label:"Scheduled",value:stats.scheduled},{label:"In Progress",value:stats.inProgress},{label:"Completed",value:stats.completed}].map(s=>(
+                  <div key={s.label} className="stat-box"><div className="stat-value">{s.value}</div><div className="stat-label">{s.label}</div></div>
+                ))}
+              </div>
+              <div className="filter-bar">
+                <input className="input" placeholder="Search jobs..." value={search} onChange={e=>setSearch(e.target.value)} />
+                <select className="select" style={{width:"auto"}} value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+                  <option value="All">All Statuses</option>
+                  {JOB_STATUSES.map(s=><option key={s}>{s}</option>)}
+                </select>
+                <select className="select" style={{width:"auto"}} value={filterType} onChange={e=>setFilterType(e.target.value)}>
+                  <option value="All">All Types</option>
+                  {JOB_TYPES.map(t=><option key={t}>{t}</option>)}
+                </select>
+                <button className="btn btn-primary" onClick={()=>setShowAddJob(true)}>+ New Job</button>
+                <button className="btn btn-ghost btn-sm" onClick={fetchQuotes} disabled={loadingQuotes}>{loadingQuotes?"Loading...":"↻ Quotes"}</button>
+              </div>
+              {filtered.length===0 ? (
+                <div className="empty">
+                  <div className="empty-icon">🔧</div>
+                  <div className="empty-title">No jobs found</div>
+                  <p className="text-dim">Add a new job or adjust your filters</p>
+                  <button className="btn btn-primary mt-3" onClick={()=>setShowAddJob(true)}>+ Create First Job</button>
+                </div>
+              ) : (
+                <div className="job-list">
+                  {filtered.map(job=>(
+                    <div key={job.id} className="job-card">
+                      <div className="job-info">
+                        <div className="job-name">{job.customerName||"Unknown Customer"}</div>
+                        <div className="job-meta">
+                          <span>📍 {job.address||"No address"}</span>
+                          {job.scheduledDate && <span>📅 {fmtDate(job.scheduledDate)}{job.scheduledTime?` at ${job.scheduledTime}`:""}</span>}
+                          {job.sqm && <span>📐 {job.sqm}m²</span>}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 items-center" style={{flexWrap:"wrap"}}>
+                        <span className="job-type-badge">{job.jobType}</span>
+                        <span className="job-status-pill" style={{background:STATUS_COLORS[job.status]+"22",color:STATUS_COLORS[job.status],border:`1px solid ${STATUS_COLORS[job.status]}44`}}>{job.status}</span>
+                        <button className="btn btn-outline btn-sm" onClick={()=>setTrackJob(job)}>⏱ Track</button>
+                        <button className="btn btn-ghost btn-sm" onClick={()=>setEditJob(job)}>✏️</button>
+                        <button className="btn btn-danger btn-sm" onClick={()=>deleteJob(job.id)}>🗑</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {tab==="calendar" && (
+            <>
+              <div className="flex items-center justify-between mb-3">
+                <button className="btn btn-ghost btn-sm" onClick={()=>setWeekOffset(w=>w-1)}>← Prev Week</button>
+                <span style={{fontFamily:"'Bebas Neue',sans-serif",letterSpacing:2,color:"#0ABAB5"}}>
+                  {weekDays[0].toLocaleDateString("en-AU",{day:"numeric",month:"short"})} — {weekDays[6].toLocaleDateString("en-AU",{day:"numeric",month:"short",year:"numeric"})}
+                </span>
+                <button className="btn btn-ghost btn-sm" onClick={()=>setWeekOffset(w=>w+1)}>Next Week →</button>
+              </div>
+              <div className="week-grid">
+                {weekDays.map((d,i)=>{
+                  const isToday = d.toDateString()===today.toDateString();
+                  const dayJobs = jobsForDay(d);
+                  return (
+                    <div key={i} className={`day-col ${isToday?"today":""}`}>
+                      <div className="day-label">{d.toLocaleDateString("en-AU",{weekday:"short"})}</div>
+                      <div className="day-num" style={{color:isToday?"#0ABAB5":"#f0ede8"}}>{d.getDate()}</div>
+                      {dayJobs.map(j=>(
+                        <div key={j.id} className="day-job" onClick={()=>setTrackJob(j)} style={{background:STATUS_COLORS[j.status]+"22",color:STATUS_COLORS[j.status]}}>
+                          {j.customerName||j.jobType}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={()=>setWeekOffset(0)}>Jump to Today</button>
+            </>
+          )}
+
+          {tab==="stats" && (
+            <>
+              <div className="card mb-3">
+                <div className="card-title">Job Breakdown by Type</div>
+                {JOB_TYPES.map(type=>{
+                  const count=jobs.filter(j=>j.jobType===type).length;
+                  if (!count) return null;
+                  return (
+                    <div key={type} className="flex items-center gap-3 mb-2">
+                      <span style={{fontSize:13,width:180}}>{type}</span>
+                      <div style={{flex:1,height:8,background:"#1e1e1e",borderRadius:4,overflow:"hidden"}}>
+                        <div style={{width:`${(count/jobs.length)*100}%`,height:"100%",background:"#0ABAB5",borderRadius:4}} />
+                      </div>
+                      <span style={{fontFamily:"'DM Mono',monospace",fontSize:13,color:"#0ABAB5",width:30}}>{count}</span>
+                    </div>
+                  );
+                })}
+                {jobs.length===0 && <p className="text-dim">No jobs yet</p>}
+              </div>
+              <div className="card mb-3">
+                <div className="card-title">Time Tracking Summary</div>
+                {jobs.filter(j=>j.timeLog?.length>0).length===0 ? (
+                  <p className="text-dim">No tracked jobs yet — start tracking to see data</p>
+                ) : (
+                  jobs.filter(j=>j.timeLog?.length>0).map(j=>{
+                    const total=j.timeLog.reduce((s,e)=>s+e.duration,0);
+                    return (
+                      <div key={j.id} className="flex justify-between items-center" style={{padding:"10px 0",borderBottom:"1px solid #2a2a2a"}}>
+                        <div>
+                          <div style={{fontSize:13,fontWeight:600}}>{j.customerName}</div>
+                          <div className="text-dim">{j.jobType} · {j.sqm}m²</div>
+                        </div>
+                        <div style={{fontFamily:"'DM Mono',monospace",color:"#0ABAB5"}}>{fmt(total)}</div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              <div className="card">
+                <div className="card-title">Materials Usage</div>
+                {jobs.filter(j=>j.materials?.length>0).length===0 ? (
+                  <p className="text-dim">No materials logged yet</p>
+                ) : (
+                  jobs.filter(j=>j.materials?.length>0).flatMap(j=>j.materials.map(m=>({...m,jobName:j.customerName,jobType:j.jobType}))).map(m=>(
+                    <div key={m.id} className="flex justify-between items-center" style={{padding:"8px 0",borderBottom:"1px solid #2a2a2a"}}>
+                      <div>
+                        <div style={{fontSize:13}}>{m.name}</div>
+                        <div className="text-dim">{m.jobName} — {m.jobType}</div>
+                      </div>
+                      <div style={{fontFamily:"'DM Mono',monospace",color:"#0ABAB5"}}>{m.qty} {m.unit}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {(showAddJob||editJob) && (
+        <JobModal job={editJob} quotes={quotes} onSave={saveJob} onClose={()=>{setShowAddJob(false);setEditJob(null);}} />
+      )}
+      {trackJob && (
+        <TrackerModal job={trackJob} onUpdate={(updated)=>{updateJob(updated);setTrackJob(updated);}} onClose={()=>setTrackJob(null)} />
+      )}
+      {toast && <div className="toast">{toast}</div>}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
