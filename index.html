@@ -303,6 +303,11 @@ function TrackerModal({ job, onUpdate, onClose }) {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [editingStep, setEditingStep] = useState(null);
+  const [showManual, setShowManual] = useState(false);
+  const [manualStep, setManualStep] = useState(TIME_STEPS[0]);
+  const [manualDate, setManualDate] = useState(new Date().toISOString().slice(0,10));
+  const [manualStart, setManualStart] = useState("");
+  const [manualEnd, setManualEnd] = useState("");
   const timerRef = useRef();
   const autoSaveRef = useRef();
 
@@ -421,6 +426,21 @@ function TrackerModal({ job, onUpdate, onClose }) {
     doSave(updated);
   };
 
+  const addManualEntry = () => {
+    if (!manualStart || !manualEnd) return;
+    const startTs = new Date(`${manualDate}T${manualStart}`).getTime();
+    const endTs = new Date(`${manualDate}T${manualEnd}`).getTime();
+    if (endTs <= startTs) return;
+    const entry = {step:manualStep, start:startTs, end:endTs, duration:endTs-startTs, manual:true};
+    const newLog = [...timeLog, entry].sort((a,b)=>a.start-b.start);
+    setTimeLog(newLog);
+    const updated = currentJobState({timeLog:newLog});
+    onUpdate(updated);
+    doSave(updated);
+    setShowManual(false);
+    setManualStart(""); setManualEnd("");
+  };
+
   const totalTime = timeLog.reduce((s,e)=>s+e.duration,0);
 
   return (
@@ -456,6 +476,44 @@ function TrackerModal({ job, onUpdate, onClose }) {
 
         {tab==="time" && (
           <>
+            {!onSite && (
+              <div className="mb-3">
+                <button className="btn btn-ghost btn-sm w-full" onClick={()=>setShowManual(v=>!v)}>
+                  {showManual ? "✕ Cancel Manual Entry" : "✏️ + Add Manual Entry"}
+                </button>
+                {showManual && (
+                  <div className="card mt-2">
+                    <div className="card-title" style={{fontSize:14}}>Manual Step Entry</div>
+                    <div className="field">
+                      <label className="label">Step</label>
+                      <select className="select" value={manualStep} onChange={e=>setManualStep(e.target.value)}>
+                        {TIME_STEPS.map(s=><option key={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label className="label">Date</label>
+                      <input className="input" type="date" value={manualDate} onChange={e=>setManualDate(e.target.value)} />
+                    </div>
+                    <div className="grid-2">
+                      <div className="field">
+                        <label className="label">Start Time</label>
+                        <input className="input" type="time" value={manualStart} onChange={e=>setManualStart(e.target.value)} />
+                      </div>
+                      <div className="field">
+                        <label className="label">End Time</label>
+                        <input className="input" type="time" value={manualEnd} onChange={e=>setManualEnd(e.target.value)} />
+                      </div>
+                    </div>
+                    {manualStart && manualEnd && (
+                      <p className="text-dim mb-3">
+                        Duration: {fmt(new Date(`${manualDate}T${manualEnd}`)-new Date(`${manualDate}T${manualStart}`))}
+                      </p>
+                    )}
+                    <button className="btn btn-primary w-full" onClick={addManualEntry}>+ Add Step</button>
+                  </div>
+                )}
+              </div>
+            )}
             {onSite && (
               <>
                 <div className="card mb-3">
@@ -472,6 +530,43 @@ function TrackerModal({ job, onUpdate, onClose }) {
                   {activeStep && <div className="tracker-clock">{activeStep}: {fmt(elapsed)}</div>}
                 </div>
 
+                <div className="mb-3">
+                  <button className="btn btn-ghost btn-sm w-full" onClick={()=>setShowManual(v=>!v)}>
+                    {showManual ? "✕ Cancel Manual Entry" : "✏️ + Add Manual Entry"}
+                  </button>
+                  {showManual && (
+                    <div className="card mt-2">
+                      <div className="card-title" style={{fontSize:14}}>Manual Step Entry</div>
+                      <div className="field">
+                        <label className="label">Step</label>
+                        <select className="select" value={manualStep} onChange={e=>setManualStep(e.target.value)}>
+                          {TIME_STEPS.map(s=><option key={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label className="label">Date</label>
+                        <input className="input" type="date" value={manualDate} onChange={e=>setManualDate(e.target.value)} />
+                      </div>
+                      <div className="grid-2">
+                        <div className="field">
+                          <label className="label">Start Time</label>
+                          <input className="input" type="time" value={manualStart} onChange={e=>setManualStart(e.target.value)} />
+                        </div>
+                        <div className="field">
+                          <label className="label">End Time</label>
+                          <input className="input" type="time" value={manualEnd} onChange={e=>setManualEnd(e.target.value)} />
+                        </div>
+                      </div>
+                      {manualStart && manualEnd && (
+                        <p className="text-dim mb-3">
+                          Duration: {fmt(new Date(`${manualDate}T${manualEnd}`)-new Date(`${manualDate}T${manualStart}`))}
+                        </p>
+                      )}
+                      <button className="btn btn-primary w-full" onClick={addManualEntry}>+ Add Step</button>
+                    </div>
+                  )}
+                </div>
+
                 {timeLog.length > 0 && (
                   <div className="card mb-3">
                     <div className="card-title" style={{fontSize:14}}>Completed Steps <span style={{fontSize:11,color:"#888",fontWeight:400}}>— tap to edit</span></div>
@@ -483,7 +578,7 @@ function TrackerModal({ job, onUpdate, onClose }) {
                           ) : (
                             <div className="step-row done" onClick={()=>setEditingStep(i)} style={{cursor:"pointer"}}>
                               <div className="step-dot done" />
-                              <div className="step-name">{e.step}</div>
+                              <div className="step-name">{e.step}{e.manual?<span style={{fontSize:9,marginLeft:4,color:"#888",border:"1px solid #333",borderRadius:3,padding:"1px 4px"}}>MANUAL</span>:""}</div>
                               <div className="step-time">{fmtTime(e.start)} → {fmtTime(e.end)}</div>
                               <div className="step-time" style={{color:"#0ABAB5"}}>{fmt(e.duration)}</div>
                               <span style={{fontSize:11,color:"#555",marginLeft:4}}>✏️</span>
@@ -505,7 +600,32 @@ function TrackerModal({ job, onUpdate, onClose }) {
                 </div>
               </>
             )}
-            {!onSite && <div className="empty"><div className="empty-icon">⏱</div><div className="empty-title">Clock in first to start tracking</div></div>}
+            {!onSite && timeLog.length > 0 && (
+              <div className="card mt-3">
+                <div className="card-title" style={{fontSize:14}}>Logged Steps</div>
+                <div className="step-list">
+                  {timeLog.map((e,i)=>(
+                    <div key={i}>
+                      {editingStep===i ? (
+                        <EditStepRow entry={e} onSave={(mins)=>saveEditStep(i,mins)} onCancel={()=>setEditingStep(null)} onDelete={()=>deleteStep(i)} />
+                      ) : (
+                        <div className="step-row done" onClick={()=>setEditingStep(i)} style={{cursor:"pointer"}}>
+                          <div className="step-dot done" />
+                          <div className="step-name">{e.step}{e.manual?<span style={{fontSize:9,marginLeft:4,color:"#888",border:"1px solid #333",borderRadius:3,padding:"1px 4px"}}>MANUAL</span>:""}</div>
+                          <div className="step-time">{fmtTime(e.start)} → {fmtTime(e.end)}</div>
+                          <div className="step-time" style={{color:"#0ABAB5"}}>{fmt(e.duration)}</div>
+                          <span style={{fontSize:11,color:"#555",marginLeft:4}}>✏️</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between" style={{borderTop:"1px solid #2a2a2a",paddingTop:12,marginTop:4}}>
+                  <span className="text-dim">Total time</span>
+                  <span style={{fontFamily:"'DM Mono',monospace",color:"#0ABAB5",fontSize:14}}>{fmt(totalTime)}</span>
+                </div>
+              </div>
+            )}
           </>
         )}
 
