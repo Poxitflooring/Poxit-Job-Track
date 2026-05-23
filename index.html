@@ -426,11 +426,18 @@ function TrackerModal({ job, onUpdate, onClose }) {
     doSave(updated);
   };
 
+  const parseDateTime = (date, time) => {
+    // iOS Safari safe parsing - split manually
+    const [y,mo,d] = date.split("-").map(Number);
+    const [h,mi] = time.split(":").map(Number);
+    return new Date(y, mo-1, d, h, mi, 0).getTime();
+  };
+
   const addManualEntry = () => {
-    if (!manualStart || !manualEnd) return;
-    const startTs = new Date(`${manualDate}T${manualStart}`).getTime();
-    const endTs = new Date(`${manualDate}T${manualEnd}`).getTime();
-    if (endTs <= startTs) return;
+    if (!manualStart || !manualEnd || !manualDate) return;
+    const startTs = parseDateTime(manualDate, manualStart);
+    const endTs = parseDateTime(manualDate, manualEnd);
+    if (isNaN(startTs) || isNaN(endTs) || endTs <= startTs) return;
     const entry = {step:manualStep, start:startTs, end:endTs, duration:endTs-startTs, manual:true};
     const newLog = [...timeLog, entry].sort((a,b)=>a.start-b.start);
     setTimeLog(newLog);
@@ -504,11 +511,13 @@ function TrackerModal({ job, onUpdate, onClose }) {
                         <input className="input" type="time" value={manualEnd} onChange={e=>setManualEnd(e.target.value)} />
                       </div>
                     </div>
-                    {manualStart && manualEnd && (
-                      <p className="text-dim mb-3">
-                        Duration: {fmt(new Date(`${manualDate}T${manualEnd}`)-new Date(`${manualDate}T${manualStart}`))}
-                      </p>
-                    )}
+                    {manualStart && manualEnd && manualDate && (()=>{
+                      const [y,mo,d]=manualDate.split("-").map(Number);
+                      const [sh,sm]=manualStart.split(":").map(Number);
+                      const [eh,em]=manualEnd.split(":").map(Number);
+                      const dur=new Date(y,mo-1,d,eh,em)-new Date(y,mo-1,d,sh,sm);
+                      return dur>0?<p className="text-dim mb-3">Duration: {fmt(dur)}</p>:<p className="text-dim mb-3" style={{color:"#e53935"}}>End time must be after start time</p>;
+                    })()}
                     <button className="btn btn-primary w-full" onClick={addManualEntry}>+ Add Step</button>
                   </div>
                 )}
@@ -557,11 +566,13 @@ function TrackerModal({ job, onUpdate, onClose }) {
                           <input className="input" type="time" value={manualEnd} onChange={e=>setManualEnd(e.target.value)} />
                         </div>
                       </div>
-                      {manualStart && manualEnd && (
-                        <p className="text-dim mb-3">
-                          Duration: {fmt(new Date(`${manualDate}T${manualEnd}`)-new Date(`${manualDate}T${manualStart}`))}
-                        </p>
-                      )}
+                      {manualStart && manualEnd && manualDate && (()=>{
+                        const [y,mo,d]=manualDate.split("-").map(Number);
+                        const [sh,sm]=manualStart.split(":").map(Number);
+                        const [eh,em]=manualEnd.split(":").map(Number);
+                        const dur=new Date(y,mo-1,d,eh,em)-new Date(y,mo-1,d,sh,sm);
+                        return dur>0?<p className="text-dim mb-3">Duration: {fmt(dur)}</p>:<p className="text-dim mb-3" style={{color:"#e53935"}}>End time must be after start time</p>;
+                      })()}
                       <button className="btn btn-primary w-full" onClick={addManualEntry}>+ Add Step</button>
                     </div>
                   )}
