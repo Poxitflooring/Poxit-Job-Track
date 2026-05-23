@@ -474,11 +474,9 @@ function TrackerModal({ job, onUpdate, onClose }) {
         )}
 
         <div className="nav-tabs" style={{marginBottom:20,padding:0}}>
-          {["time","materials"].map(t=>(
-            <div key={t} className={`nav-tab ${tab===t?"active":""}`} onClick={()=>setTab(t)}>
-              {t==="time"?"⏱ Time Tracking":"📦 Materials Used"}
-            </div>
-          ))}
+          <div className={`nav-tab ${tab==="time"?"active":""}`} onClick={()=>setTab("time")}>⏱ Live Track</div>
+          <div className={`nav-tab ${tab==="manual"?"active":""}`} onClick={()=>setTab("manual")}>✏️ Manual Entry</div>
+          <div className={`nav-tab ${tab==="materials"?"active":""}`} onClick={()=>setTab("materials")}>📦 Materials</div>
         </div>
 
         {tab==="time" && (
@@ -638,6 +636,57 @@ function TrackerModal({ job, onUpdate, onClose }) {
               </div>
             )}
           </>
+        )}
+
+        {tab==="manual" && (
+          <div className="card">
+            <div className="card-title" style={{fontSize:14}}>Add Step Manually</div>
+            <div className="field">
+              <label className="label">Step</label>
+              <select className="select" value={manualStep} onChange={e=>setManualStep(e.target.value)}>
+                {TIME_STEPS.map(s=><option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label className="label">Date</label>
+              <input className="input" type="date" value={manualDate} onChange={e=>setManualDate(e.target.value)} />
+            </div>
+            <div className="grid-2">
+              <div className="field">
+                <label className="label">Start Time</label>
+                <input className="input" type="time" value={manualStart} onChange={e=>setManualStart(e.target.value)} />
+              </div>
+              <div className="field">
+                <label className="label">End Time</label>
+                <input className="input" type="time" value={manualEnd} onChange={e=>setManualEnd(e.target.value)} />
+              </div>
+            </div>
+            {manualStart && manualEnd && (() => {
+              const [y,mo,d] = manualDate.split("-").map(Number);
+              const [sh,sm] = manualStart.split(":").map(Number);
+              const [eh,em] = manualEnd.split(":").map(Number);
+              const dur = new Date(y,mo-1,d,eh,em).getTime() - new Date(y,mo-1,d,sh,sm).getTime();
+              return dur > 0
+                ? <p className="text-dim mb-3">Duration: {fmt(dur)}</p>
+                : <p style={{color:"#e53935",fontSize:12,marginBottom:12}}>End time must be after start time</p>;
+            })()}
+            <button className="btn btn-primary w-full" onClick={addManualEntry}>+ Add Step</button>
+            {timeLog.length > 0 && (
+              <div className="mt-3">
+                <hr className="divider" />
+                <div style={{fontSize:12,fontWeight:600,letterSpacing:1,color:"#888",textTransform:"uppercase",marginBottom:12}}>All Logged Steps</div>
+                {timeLog.map((e,i)=>(
+                  <div key={i} className="step-row done" style={{marginBottom:8}}>
+                    <div className="step-dot done" />
+                    <div className="step-name">{e.step}{e.manual?<span style={{fontSize:9,marginLeft:4,color:"#888",border:"1px solid #333",borderRadius:3,padding:"1px 4px"}}>MANUAL</span>:""}</div>
+                    <div className="step-time">{fmtTime(e.start)}</div>
+                    <div className="step-time" style={{color:"#0ABAB5"}}>{fmt(e.duration)}</div>
+                    <button className="btn btn-danger btn-sm" style={{padding:"3px 8px",fontSize:11}} onClick={()=>deleteStep(i)}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {tab==="materials" && (
