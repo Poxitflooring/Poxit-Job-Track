@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+body { background: #0a0a0a; color: #f0ede8; font-family: sans-serif; padding: 20px; }
+.input, .select { background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 6px; color: #f0ede8; font-size: 13px; padding: 10px 12px; width: 100%; margin-bottom: 12px; outline: none; }
+.btn { padding: 12px 20px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; background: #0ABAB5; color: #000; width: 100%; margin-top: 8px; }
+.step { background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; margin-top: 8px; font-size: 13px; }
+.info { color: #0ABAB5; font-size: 12px; margin: 8px 0; }
+.err { color: #e53935; font-size: 12px; margin: 8px 0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+const TIME_STEPS = ["Setup","Repairs","Grinding","Priming","Wait (Prime)","Epoxy & Flake","Wait (Epoxy)","Scrape & Clean","Topcoat #1","Wait (Topcoat 1)","Topcoat #2","Wait (Topcoat 2)","Pack Up"];
+
+function fmt(ms) {
+  if (!ms || ms <= 0) return "0m";
+  const m = Math.floor(ms/60000), h = Math.floor(m/60);
+  return h > 0 ? `${h}h ${m%60}m` : `${m}m`;
+}
+
+function App() {
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  
+  const [step, setStep] = useState(TIME_STEPS[0]);
+  const [date, setDate] = useState(todayStr);
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
+  const [log, setLog] = useState([]);
+  const [msg, setMsg] = useState("");
+
+  const getDur = () => {
+    if (!start || !end || !date) return null;
+    const [y,mo,d] = date.split("-").map(Number);
+    const [sh,sm] = start.split(":").map(Number);
+    const [eh,em] = end.split(":").map(Number);
+    const s = new Date(y,mo-1,d,sh,sm,0).getTime();
+    const e = new Date(y,mo-1,d,eh,em,0).getTime();
+    return {s, e, dur: e - s};
+  };
+
+  const addStep = () => {
+    const r = getDur();
+    if (!r) { setMsg("Fill in all fields"); return; }
+    if (r.dur <= 0) { setMsg("End must be after start"); return; }
+    setLog(prev => [...prev, {step, start:r.s, end:r.e, duration:r.dur}]);
+    setStart(""); setEnd("");
+    setMsg("✓ Step added!");
+    setTimeout(() => setMsg(""), 2000);
+  };
+
+  const parsed = getDur();
+
+  return (
+    <div style={{maxWidth:400}}>
+      <h2 style={{color:"#0ABAB5",marginBottom:20}}>Manual Entry Test</h2>
+      <select className="select" value={step} onChange={e=>setStep(e.target.value)}>
+        {TIME_STEPS.map(s=><option key={s}>{s}</option>)}
+      </select>
+      <input className="input" type="date" value={date} onChange={e=>setDate(e.target.value)} />
+      <input className="input" type="time" value={start} onChange={e=>setStart(e.target.value)} />
+      <input className="input" type="time" value={end} onChange={e=>setEnd(e.target.value)} />
+      {parsed && parsed.dur > 0 && <div className="info">Duration: {fmt(parsed.dur)}</div>}
+      {parsed && parsed.dur <= 0 && <div className="err">End must be after start</div>}
+      {msg && <div className="info">{msg}</div>}
+      <button className="btn" onClick={addStep}>+ Add Step</button>
+      {log.map((e,i)=>(
+        <div key={i} className="step">
+          {e.step} — {fmt(e.duration)}
+        </div>
+      ))}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
